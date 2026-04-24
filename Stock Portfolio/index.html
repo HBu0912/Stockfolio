@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stockfolio — Secure Portfolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <!-- Landing -->
+      <section id="screen-landing" class="screen is-visible" aria-hidden="false">
+        <div class="landing-card">
+          <p class="eyebrow">Private · Encrypted</p>
+          <h1 id="landing-title">Your portfolio, one place</h1>
+          <p class="lead" id="landing-lead">
+            Name each brokerage account, enter tickers and share counts like a spreadsheet, and see each symbol’s
+            <strong>last daily close</strong> plus a consolidated view across everything.
+          </p>
+          <button type="button" id="btn-enter" class="btn btn-primary">Get started</button>
+        </div>
+      </section>
+
+      <!-- Auth -->
+      <section id="screen-auth" class="screen" aria-hidden="true">
+        <div class="auth-layout">
+          <div class="auth-brand">
+            <p class="eyebrow">Stockfolio</p>
+            <h2 id="auth-title">Sign in securely</h2>
+            <p class="muted" id="auth-sub">
+              Your holdings are encrypted with AES-GCM. Your password never leaves this device in plain text—we derive a
+              key with PBKDF2 (250k iterations).
+            </p>
+          </div>
+          <div class="auth-panel">
+            <div class="auth-tabs" role="tablist">
+              <button type="button" id="tab-login" class="auth-tab is-active" role="tab" aria-selected="true">Log in</button>
+              <button type="button" id="tab-signup" class="auth-tab" role="tab" aria-selected="false">Create account</button>
+            </div>
+
+            <form id="form-login" class="auth-form" autocomplete="username">
+              <label class="field">
+                <span>Username</span>
+                <input id="login-user" name="username" type="text" required autocomplete="username" />
+              </label>
+              <label class="field">
+                <span>Password</span>
+                <input id="login-pass" type="password" required autocomplete="current-password" />
+              </label>
+              <button type="submit" class="btn btn-primary btn-block">Log in</button>
+            </form>
+
+            <form id="form-signup" class="auth-form is-hidden" autocomplete="username">
+              <label class="field">
+                <span>Username</span>
+                <input id="signup-user" name="username" type="text" required autocomplete="username" />
+              </label>
+              <label class="field">
+                <span>Password</span>
+                <input id="signup-pass" type="password" minlength="8" required autocomplete="new-password" />
+              </label>
+              <p class="hint">At least 8 characters. Use a strong password—recovery is not possible if you forget it.</p>
+              <button type="submit" class="btn btn-primary btn-block">Create encrypted vault</button>
+            </form>
+
+            <p id="auth-message" class="message" role="status"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- App -->
+      <section id="screen-app" class="screen" aria-hidden="true">
+        <header class="app-header">
+          <div>
+            <p class="eyebrow">Stockfolio</p>
+            <h2 id="app-greeting">Portfolio</h2>
+          </div>
+          <div class="app-header-actions">
+            <span id="price-status" class="status-text"></span>
+            <button type="button" id="btn-add-account" class="btn btn-ghost btn-sm">Add account</button>
+            <button type="button" id="btn-refresh" class="btn btn-ghost btn-sm">Refresh</button>
+            <button type="button" id="btn-arena" class="btn btn-ghost btn-sm">Arena</button>
+            <button type="button" id="btn-logout" class="btn btn-ghost btn-sm">Log out</button>
+          </div>
+        </header>
+        <section class="portfolio-layout">
+          <div class="portfolio-top">
+            <aside class="portfolio-sidebar card">
+              <nav class="account-tabs account-tabs-vertical" id="account-tabs" aria-label="Accounts"></nav>
+              <form id="form-position" class="stack-form">
+                <label class="field">
+                  <span>Ticker</span>
+                  <input id="pos-ticker" type="text" placeholder="AAPL" required maxlength="12" autocomplete="off" />
+                </label>
+                <label class="field">
+                  <span>Shares</span>
+                  <input id="pos-shares" type="number" min="0.000001" step="any" required />
+                </label>
+                <button type="submit" id="btn-position-submit" class="btn btn-primary btn-block">Update</button>
+              </form>
+              <p id="position-helper" class="muted small helper-note">Select an account to update your positions.</p>
+              <section>
+                <h3 class="card-title">Your investing feed</h3>
+                <div id="portfolio-feed" class="feed-list"></div>
+              </section>
+            </aside>
+
+            <section class="card alloc-card">
+              <h3 class="card-title" id="alloc-title">Allocation</h3>
+              <div class="alloc-layout">
+                <div class="alloc-pie-wrap">
+                  <div id="alloc-pie" class="alloc-pie"></div>
+                  <div id="alloc-hover" class="alloc-hover is-hidden"></div>
+                </div>
+                <div id="alloc-legend" class="alloc-legend"></div>
+              </div>
+            </section>
+          </div>
+
+          <div class="portfolio-bottom">
+            <div id="panel-account" class="card is-hidden">
+              <h3 class="card-title">Positions — <span id="active-account-label"></span></h3>
+              <div class="stat-row" id="account-stats"></div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th data-sort-account="ticker">Ticker</th>
+                      <th data-sort-account="shares">Shares</th>
+                      <th data-sort-account="price">Last close</th>
+                      <th data-sort-account="value">Value</th>
+                      <th data-sort-account="alloc">% of portfolio</th>
+                      <th></th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbody-account"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <section id="panel-overview" class="card">
+              <h3 class="card-title">Consolidated overview</h3>
+              <p class="muted small">All accounts combined — every ticker once, total shares and % of full portfolio.</p>
+              <div class="stat-row" id="overview-stats"></div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th data-sort-overview="ticker">Ticker</th>
+                      <th data-sort-overview="shares">Total shares</th>
+                      <th data-sort-overview="price">Last close</th>
+                      <th data-sort-overview="value">Total value</th>
+                      <th data-sort-overview="alloc">% of portfolio</th>
+                      <th data-sort-overview="accounts">Held in</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbody-consolidated"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
+      </section>
+
+      <!-- Arena home -->
+      <section id="screen-arena-home" class="screen" aria-hidden="true">
+        <header class="app-header">
+          <div>
+            <p class="eyebrow">Arena</p>
+            <h2>Arena</h2>
+            <p class="muted small">See what your friends are investing in!</p>
+          </div>
+          <div class="app-header-actions">
+            <div class="hover-action-wrap">
+              <button type="button" id="btn-arena-create-quick" class="btn btn-ghost btn-sm">Create</button>
+              <div class="hover-note">Start a new arena and generate an invite code.</div>
+            </div>
+            <div class="hover-action-wrap">
+              <button type="button" id="btn-arena-join-quick" class="btn btn-ghost btn-sm">Join</button>
+              <div class="hover-note">Enter an invite code to join a friend's arena.</div>
+            </div>
+            <button type="button" id="btn-arena-home-back" class="btn btn-ghost btn-sm">Back to portfolio</button>
+          </div>
+        </header>
+
+        <section class="card">
+          <h3 class="card-title">Your arenas</h3>
+          <p class="muted small">If you are already in an Arena, open it to view each member’s allocation %.</p>
+          <div id="arena-current-list" class="arena-list"></div>
+        </section>
+
+      </section>
+
+      <!-- Arena comparison (full-width view) -->
+      <section id="screen-arena" class="screen" aria-hidden="true">
+        <header class="app-header">
+          <div>
+            <p class="eyebrow">Arena</p>
+            <h2 id="arena-title">Arena</h2>
+            <p class="muted small" id="arena-sub">Percent of portfolio per ticker only — no shares, dollar totals, or account names.</p>
+            <p class="muted small" id="arena-invite-line"></p>
+          </div>
+          <div class="app-header-actions">
+            <button type="button" id="btn-arena-copy-code" class="btn btn-ghost btn-sm">Copy invite</button>
+            <button type="button" id="btn-arena-rename" class="btn btn-ghost btn-sm is-hidden">Rename arena</button>
+            <button type="button" id="btn-arena-delete" class="btn btn-ghost btn-sm is-hidden">Delete arena</button>
+            <button type="button" id="btn-arena-add-account" class="btn btn-ghost btn-sm">Add account</button>
+            <button type="button" id="btn-arena-refresh" class="btn btn-ghost btn-sm">Refresh</button>
+            <button type="button" id="btn-arena-back" class="btn btn-ghost btn-sm">Back to Arena</button>
+          </div>
+        </header>
+        <div class="card">
+          <div class="arena-view-layout">
+            <div id="arena-members-grid" class="arena-members-grid"></div>
+            <aside class="arena-feed card">
+              <h3 class="card-title">Investing feed</h3>
+              <div id="arena-feed-list" class="feed-list"></div>
+            </aside>
+          </div>
+        </div>
+        <p id="arena-footnote" class="muted small"></p>
+        <section id="arena-admin-panel" class="card is-hidden">
+          <h3 class="card-title">Creator controls</h3>
+          <p class="muted small">Only the arena creator can remove members.</p>
+          <div id="arena-admin-members" class="feed-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <!-- Modal: Add brokerage account -->
+    <div id="modal-add-account" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" data-close-modal="add-account"></div>
+      <div class="modal-panel" role="dialog" aria-labelledby="modal-add-account-title">
+        <h3 id="modal-add-account-title" class="modal-title">Add brokerage account</h3>
+        <p class="muted small">e.g. Robinhood Taxable, Roth IRA, 401(k)</p>
+        <form id="form-modal-account" class="auth-form">
+          <label class="field">
+            <span>Account name</span>
+            <input id="modal-account-name" type="text" maxlength="120" required placeholder="Robinhood Taxable, Fidelity, …" />
+          </label>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" data-close-modal="add-account">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Edit shares -->
+    <div id="modal-edit-shares" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" data-close-modal="edit-shares"></div>
+      <div class="modal-panel" role="dialog" aria-labelledby="modal-edit-title">
+        <h3 id="modal-edit-title" class="modal-title">Update shares</h3>
+        <form id="form-modal-edit-shares" class="auth-form">
+          <input type="hidden" id="edit-account-id" />
+          <input type="hidden" id="edit-position-id" />
+          <label class="field">
+            <span>Ticker</span>
+            <input id="edit-ticker-display" type="text" readonly />
+          </label>
+          <label class="field">
+            <span>Shares</span>
+            <input id="edit-shares-input" type="number" min="0.000001" step="any" required />
+          </label>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" data-close-modal="edit-shares">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Arena member detail -->
+    <div id="modal-arena-member" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" id="arena-member-backdrop"></div>
+      <div class="modal-panel modal-panel-wide" role="dialog" aria-labelledby="arena-member-title">
+        <div class="member-modal-header">
+          <h3 id="arena-member-title" class="modal-title">Member allocations</h3>
+          <button type="button" id="btn-close-arena-member" class="btn btn-ghost btn-sm" aria-label="Close member details">X</button>
+        </div>
+        <div class="arena-detail-grid">
+          <section>
+            <h4 class="arena-col-title">Top 5 Holdings</h4>
+            <div id="arena-member-top5" class="arena-detail-list"></div>
+          </section>
+          <section>
+            <h4 class="arena-col-title">Matching Holdings</h4>
+            <div id="arena-member-matches" class="arena-detail-list"></div>
+          </section>
+        </div>
+        <section class="arena-detail-section">
+          <h4 class="arena-col-title">All Holdings</h4>
+          <div id="arena-member-all" class="arena-detail-list"></div>
+        </section>
+        <p id="arena-member-note" class="muted small"></p>
+      </div>
+    </div>
+
+    <!-- Modal: Create arena -->
+    <div id="modal-arena-create" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" data-close-modal="arena-create"></div>
+      <div class="modal-panel" role="dialog" aria-labelledby="modal-arena-create-title">
+        <h3 id="modal-arena-create-title" class="modal-title">Create arena</h3>
+        <label class="field">
+          <span>Arena name</span>
+          <input id="arena-create-name" type="text" maxlength="80" placeholder="Friends Growth Picks" />
+        </label>
+        <button type="button" id="btn-arena-create" class="btn btn-primary btn-block">Create arena</button>
+        <p id="arena-create-msg" class="message"></p>
+      </div>
+    </div>
+
+    <!-- Modal: Join arena -->
+    <div id="modal-arena-join" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" data-close-modal="arena-join"></div>
+      <div class="modal-panel" role="dialog" aria-labelledby="modal-arena-join-title">
+        <h3 id="modal-arena-join-title" class="modal-title">Join arena</h3>
+        <label class="field">
+          <span>Arena code</span>
+          <input id="arena-join-code" type="text" maxlength="12" placeholder="ABC12XY9" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span>Your display name</span>
+          <input id="arena-display-name" type="text" maxlength="40" placeholder="How you appear in the Arena" />
+        </label>
+        <button type="button" id="btn-arena-join" class="btn btn-primary btn-block">Join arena</button>
+        <p id="arena-join-msg" class="message"></p>
+      </div>
+    </div>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
